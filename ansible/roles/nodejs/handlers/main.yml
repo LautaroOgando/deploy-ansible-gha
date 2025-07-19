@@ -1,0 +1,14 @@
+- name: Reload systemd
+  command: systemctl daemon-reload
+
+- name: Enable and start nodeapp
+  systemd:
+    name: nodeapp
+    enabled: yes
+    state: started
+
+- name: Reload nodeapp
+  systemd:
+    name: nodeapp
+    state: restarted
+

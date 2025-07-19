@@ -1,0 +1,32 @@
+# roles/nginx/tasks/main.yml
+---
+- name: Install nginx
+  ansible.builtin.apt: # This line should be indented exactly 2 spaces from '- name:'
+    name: nginx
+    state: latest
+    update_cache: yes
+
+- name: Remove default nginx configuration
+  ansible.builtin.file: # Indented 2 spaces from '- name:'
+    path: /etc/nginx/nginx.conf
+    state: absent
+
+- name: Remove default nginx configuration
+  ansible.builtin.file: # Indented 2 spaces from '- name:'
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+
+- name: Add nginx configuration
+  ansible.builtin.copy: # Indented 2 spaces from '- name:'
+    src: nginx.conf
+    dest: /etc/nginx/nginx.conf
+    owner: www-data
+    group: www-data
+    mode: '0644'
+  notify: Reload Nginx # This line (notify) also needs to be at the same level as the module
+
+- name: Ensure nginx is running
+  ansible.builtin.systemd: # Indented 2 spaces from '- name:'
+    name: nginx
+    state: started
+    enabled: yes

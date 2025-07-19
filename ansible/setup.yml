@@ -1,0 +1,15 @@
+# setup.yml
+---
+- name: Configuración inicial del servidor
+  hosts: all 
+  become: yes 
+
+  roles:
+    - base 
+    - nginx 
+    - role: site   
+      tags:
+        - site 
+    - role: nodejs
+      tags:
+        - nodejs

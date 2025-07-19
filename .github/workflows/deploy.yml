@@ -1,0 +1,77 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: us-east-1
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # --- AWS Credentials ---
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    # --- Terraform Setup ---
+    - name: Install Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.12.2
+
+    - name: Terraform Init
+      working-directory: ./terraform-aws
+      run: terraform init
+
+    - name: Terraform Apply
+      working-directory: ./terraform-aws
+      run: terraform apply -auto-approve
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ env.AWS_REGION }}
+
+    # --- SSH Setup for Ansible ---
+    - name: Set up SSH access for Ansible
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.ANSIBLE_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+
+        # Get EC2 public IP by instance tag (Name = MyFreeTierInstance)
+        EC2_IP=$(aws ec2 describe-instances \
+          --filters "Name=tag:Name,Values=MyFreeTierInstance" \
+          --query 'Reservations[].Instances[].PublicIpAddress' \
+          --output text)
+
+        # Fail if no IP found
+        if [ -z "$EC2_IP" ]; then
+          echo "Error: Could not find public IP for instance tagged 'll'"
+          exit 1
+        fi
+
+        # Export IP for later steps
+        echo "EC2_IP=$EC2_IP" >> $GITHUB_ENV
+
+        # Add host key to avoid SSH prompt
+        ssh-keyscan -H $EC2_IP >> ~/.ssh/known_hosts
+
+    # --- Run Ansible Playbook ---
+    - name: Run Ansible Playbook
+      run: |
+        ansible-playbook -i "${{ env.EC2_IP }}," setup.yml --tags nodejs \
+          --private-key ~/.ssh/id_rsa \
+          -e "ansible_user=ubuntu"
+      env:
+        ANSIBLE_HOST_KEY_CHECKING: "False"

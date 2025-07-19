@@ -1,0 +1,17 @@
+---
+- name: Install fail2ban
+  ansible.builtin.apt:
+    name: 
+      - fail2ban
+      - unzip
+      - git
+    state: latest
+    update_cache: yes
+
+- name: Create test directory
+  ansible.builtin.file:
+    path: /home/ubuntu/test
+    state: directory 
+    owner: ubuntu
+    group: ubuntu
+    mode: '0755'

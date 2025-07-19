@@ -1,0 +1,26 @@
+# roles/site/tasks/main.yml
+---
+- name: Remove existing /var/www/html directory if it's not a repo
+  ansible.builtin.file:
+    path: /var/www/html
+    state: absent
+  when: ansible_check_mode is not true # Evita borrar en modo de verificación
+  # Opcional: solo si no es un repo. Para un primer despliegue es simple.
+  # El git module tiene un 'clone: yes' default que puede manejarse con 'force'
+  # pero para un 'git clone' inicial en un dir no vacio, 'rm -rf' es mas directo.
+
+- name: Pull and deploy site
+  ansible.builtin.git:
+    repo: 'https://github.com/LautaroOgando/ansible-site.git'
+    dest: /var/www/html
+    version: main
+    force: yes # Esto ayudará en futuras ejecuciones para actualizar, no para este error de 'already exists'.
+
+- name: Ensure correct permissions for the deployed site
+  ansible.builtin.file:
+    path: /var/www/html
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: '0755'
+    recurse: yes

@@ -1,0 +1,42 @@
+---
+- name: Install node and npm
+  ansible.builtin.apt:
+    name:
+      - nodejs
+      - npm
+    state: latest
+    update_cache: yes
+
+- name: Remove existing nodeapp directory
+  ansible.builtin.file:
+    path: /home/ubuntu/nodeapp/
+    state: absent
+
+- name: Node Directories
+  ansible.builtin.file:
+    path: /home/ubuntu/nodeapp/
+    state: directory # Más explícito para directorios
+    owner: ubuntu
+    group: ubuntu
+    mode: '0755' # Permisos para el directorio
+
+- name: Pull and deploy site
+  ansible.builtin.git:
+    repo: 'https://github.com/LautaroOgando/ansible-node'
+    dest: /home/ubuntu/nodeapp/
+    version: main
+    force: yes # Esto ayudará en futuras ejecuciones para actualizar, no para este error de 'already exists'.
+  notify:
+    - Reload nodeapp
+
+- name: Copiar archivo nodeapp.service
+  copy:
+    src: ../files/service/nodeapp.service
+    dest: /etc/systemd/system/nodeapp.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify: 
+    - Reload systemd
+    - Enable and start nodeapp
+
