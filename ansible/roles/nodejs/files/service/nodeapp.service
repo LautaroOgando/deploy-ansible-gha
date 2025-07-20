@@ -3,7 +3,7 @@ Description=Node.js Application
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/node --inspect /home/ubuntu/nodeapp/app.js
+ExecStart=/usr/bin/npm start
 WorkingDirectory=/home/ubuntu/nodeapp
 Restart=always
 RestartSec=5
