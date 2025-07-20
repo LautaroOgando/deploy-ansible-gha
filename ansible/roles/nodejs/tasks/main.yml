@@ -1,4 +1,5 @@
----
+# ansible/setup.yml
+
 - name: Install node and npm
   ansible.builtin.apt:
     name:
@@ -7,28 +8,32 @@
     state: latest
     update_cache: yes
 
-- name: Remove existing nodeapp directory
+- name: Remove existing nodeapp directory for clean deployment
   ansible.builtin.file:
     path: /home/ubuntu/nodeapp/
     state: absent
 
-- name: Pull and deploy site
-  ansible.builtin.git:
-    repo: 'https://github.com/LautaroOgando/deploy-ansible-gha.git'
+- name: Copy Node.js app files from GitHub Actions workspace to EC2
+  ansible.builtin.synchronize:
+    src: "{{ playbook_dir }}/roles/nodejs/files/codebase/" # <--- ¡RUTA AJUSTADA!
     dest: /home/ubuntu/nodeapp/
-    version: main
-    force: yes # Esto ayudará en futuras ejecuciones para actualizar, no para este error de 'already exists'.
+    mode: push # Indica que los archivos se envían del controlador (runner) al destino (EC2)
+    recursive: yes # Copia directorios y su contenido
+    perms: yes # Mantiene los permisos de los archivos
+    owner: yes # Mantiene el propietario (si el usuario 'ubuntu' existe en el destino)
+    group: yes # Mantiene el grupo (si el grupo 'ubuntu' existe en el destino)
   notify:
     - Reload nodeapp
 
-- name: Copiar archivo nodeapp.service
-  copy:
+# --- PASO ORIGINAL (Mantener si es un archivo de configuración externo) ---
+# Copiar el archivo de servicio systemd.
+- name: Copy nodeapp.service file
+  ansible.builtin.copy:
     src: ../files/service/nodeapp.service
     dest: /etc/systemd/system/nodeapp.service
     owner: root
     group: root
     mode: '0644'
-  notify: 
+  notify:
     - Reload systemd
     - Enable and start nodeapp
-
