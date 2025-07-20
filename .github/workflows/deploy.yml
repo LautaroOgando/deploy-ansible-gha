@@ -35,12 +35,30 @@ jobs:
       run: terraform init
 
     - name: Terraform Apply
+      id: terraform_apply # Añadimos un ID a este paso para capturar sus outputs
       working-directory: ./terraform-aws
       run: terraform apply -auto-approve
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_REGION: ${{ env.AWS_REGION }}
+
+    # --- Esperar a que la Instancia EC2 esté en Running ---
+    # Este paso espera hasta que la instancia creada por Terraform esté completamente en ejecución.
+    - name: Wait for EC2 instance to be running
+      run: |
+        # Capturamos el ID de la instancia de la salida del paso 'terraform_apply'.
+        # El output 'instance_id' debe estar definido en tu archivo outputs.tf de Terraform.
+        INSTANCE_ID="${{ steps.terraform_apply.outputs.instance_id }}"
+        
+        echo "Waiting for instance $INSTANCE_ID to be running..."
+        # El comando 'aws ec2 wait instance-running' pausa el script hasta que la instancia esté lista.
+        aws ec2 wait instance-running --instance-ids "$INSTANCE_ID"
+        echo "Instance $INSTANCE_ID is now running."
+      env:
+        AWS_REGION: ${{ env.AWS_REGION }} # Aseguramos que la región esté disponible para el comando aws
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }} # Necesario para el comando aws
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }} # Necesario para el comando aws
 
     # --- SSH Setup for Ansible ---
     - name: Set up SSH access for Ansible
@@ -50,14 +68,15 @@ jobs:
         chmod 600 ~/.ssh/id_rsa
 
         # Get EC2 public IP by instance tag (Name = MyFreeTierInstance)
+        # Este comando ahora se ejecutará DESPUÉS de que la instancia esté garantizada como 'running'.
         EC2_IP=$(aws ec2 describe-instances \
           --filters "Name=tag:Name,Values=MyFreeTierInstance" \
           --query 'Reservations[].Instances[].PublicIpAddress' \
           --output text)
 
-        # Fail if no IP found
+        # Fail if no IP found (aunque ahora es menos probable)
         if [ -z "$EC2_IP" ]; then
-          echo "Error: Could not find public IP for instance tagged 'MyFreeTierInstance'"
+          echo "Error: Could not find public IP for instance tagged 'MyFreeTierInstance'."
           exit 1
         fi
 
