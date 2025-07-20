@@ -37,28 +37,43 @@ jobs:
     - name: Terraform Apply
       id: terraform_apply # Añadimos un ID a este paso para capturar sus outputs
       working-directory: ./terraform-aws
-      run: terraform apply -auto-approve
+      run: |
+        # Ejecutar Terraform Apply
+        terraform apply -auto-approve
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ env.AWS_REGION }}
+
+    # --- Capturar la Salida de Terraform (Paso Separado) ---
+    # Creamos un paso dedicado solo para obtener el output de Terraform
+    # y exportarlo como una salida de paso de GitHub Actions.
+    - name: Get Terraform Outputs
+      id: get_tf_outputs # ID para este nuevo paso
+      working-directory: ./terraform-aws # Ejecutar en el mismo directorio de Terraform
+      run: |
+        INSTANCE_ID_FROM_TF=$(terraform output -raw instance_id)
+        echo "instance_id=$INSTANCE_ID_FROM_TF" >> "$GITHUB_OUTPUT"
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_REGION: ${{ env.AWS_REGION }}
 
     # --- Esperar a que la Instancia EC2 esté en Running ---
-    # Este paso espera hasta que la instancia creada por Terraform esté completamente en ejecución.
+    # Este paso ahora usa la salida del nuevo paso 'get_tf_outputs'.
     - name: Wait for EC2 instance to be running
       run: |
-        # Capturamos el ID de la instancia de la salida del paso 'terraform_apply'.
-        # El output 'instance_id' debe estar definido en tu archivo outputs.tf de Terraform.
-        INSTANCE_ID="${{ steps.terraform_apply.outputs.instance_id }}"
+        # Capturamos el ID de la instancia de la salida del paso 'get_tf_outputs'.
+        INSTANCE_ID="${{ steps.get_tf_outputs.outputs.instance_id }}"
         
         echo "Waiting for instance $INSTANCE_ID to be running..."
         # El comando 'aws ec2 wait instance-running' pausa el script hasta que la instancia esté lista.
         aws ec2 wait instance-running --instance-ids "$INSTANCE_ID"
         echo "Instance $INSTANCE_ID is now running."
       env:
-        AWS_REGION: ${{ env.AWS_REGION }} # Aseguramos que la región esté disponible para el comando aws
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }} # Necesario para el comando aws
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }} # Necesario para el comando aws
+        AWS_REGION: ${{ env.AWS_REGION }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
     # --- SSH Setup for Ansible ---
     - name: Set up SSH access for Ansible
@@ -68,13 +83,12 @@ jobs:
         chmod 600 ~/.ssh/id_rsa
 
         # Get EC2 public IP by instance tag (Name = MyFreeTierInstance)
-        # Este comando ahora se ejecutará DESPUÉS de que la instancia esté garantizada como 'running'.
         EC2_IP=$(aws ec2 describe-instances \
           --filters "Name=tag:Name,Values=MyFreeTierInstance" \
           --query 'Reservations[].Instances[].PublicIpAddress' \
           --output text)
 
-        # Fail if no IP found (aunque ahora es menos probable)
+        # Fail if no IP found
         if [ -z "$EC2_IP" ]; then
           echo "Error: Could not find public IP for instance tagged 'MyFreeTierInstance'."
           exit 1
