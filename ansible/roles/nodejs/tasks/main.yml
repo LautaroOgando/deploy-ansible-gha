@@ -12,14 +12,6 @@
     path: /home/ubuntu/nodeapp/
     state: absent
 
-- name: Copy Node.js app files
-  ansible.builtin.copy:
-    src: "../files/nodeapp/"
-    dest: /home/ubuntu/nodeapp/
-    owner: ubuntu
-    group: ubuntu
-    mode: '0755'
-
 - name: Pull and deploy site
   ansible.builtin.git:
     repo: 'https://github.com/LautaroOgando/deploy-ansible-gha.git'
