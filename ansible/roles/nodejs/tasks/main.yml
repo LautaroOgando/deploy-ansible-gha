@@ -15,7 +15,7 @@
 
 - name: Copy Node.js app files from GitHub Actions workspace to EC2
   ansible.builtin.synchronize:
-    src: "{{ playbook_dir }}/roles/nodejs/files/codebase/" # <--- ¡RUTA AJUSTADA!
+    src: "{{ playbook_dir }}/roles/nodejs/files/codebase/"
     dest: /home/ubuntu/nodeapp/
     mode: push # Indica que los archivos se envían del controlador (runner) al destino (EC2)
     recursive: yes # Copia directorios y su contenido
