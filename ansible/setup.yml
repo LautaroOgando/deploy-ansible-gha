@@ -6,10 +6,7 @@
 
   roles:
     - base 
-    - nginx 
-    - role: site   
-      tags:
-        - site 
+    - nginx
     - role: nodejs
       tags:
         - nodejs
