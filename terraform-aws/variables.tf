@@ -2,32 +2,32 @@
 
 # AWS Region variable.
 variable "aws_region" {
-  description = "La región de AWS donde se desplegarán los recursos."
+  description = "The AWS region where resources will be deployed."
   type        = string
   default     = "us-east-1" # By default, you can change it as needed.
 }
 
 variable "key_pair_name" {
-  description = "El nombre del par de claves SSH existente en AWS para la instancia EC2."
+  description = "The name of the existing SSH key pair in AWS for the EC2 instance."
   type        = string
  
   default     = "ecs2k" 
 }
 
 variable "instance_type" {
-  description = "El tipo de instancia EC2 a desplegar."
+  description = "The EC2 instance type to deploy."
   type        = string
   default     = "t2.micro"
 }
 
 variable "instance_name" {
-  description = "El nombre (etiqueta Name) de la instancia EC2."
+  description = "The name (Name tag) of the EC2 instance."
   type        = string
   default     = "MyFreeTierInstance"
 }
 
 variable "security_group_name" {
-  description = "El nombre para el Security Group de la instancia EC2."
+  description = "The name for the EC2 instance Security Group."
   type        = string
   default     = "MyUbuntuSecurityGroup"
 }

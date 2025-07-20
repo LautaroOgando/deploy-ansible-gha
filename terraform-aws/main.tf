@@ -7,7 +7,7 @@ provider "aws" {
 # t2.micro Free Tier instance type.
 data "aws_ami" "ubuntu" {
     most_recent = true
-    owners      = ["099720109477"] # ID de cuenta de AWS para Canonical (propietario de Ubuntu AMIs)
+    owners      = ["099720109477"] # Canonical's official Ubuntu AMI owner ID.
 
     filter {
         name   = "name"
@@ -50,7 +50,7 @@ resource "aws_security_group" "instance_sg" {
         description = "Allow Custom Port 3001"
     }
 
-    # outbound rules
+    # Outbound rules
     egress {
         from_port   = 0
         to_port     = 0
@@ -67,11 +67,11 @@ resource "aws_security_group" "instance_sg" {
 resource "aws_instance" "my_ec2_instance" {
     ami             = data.aws_ami.ubuntu.id
     instance_type   = var.instance_type
-    key_name        = var.key_pair_name # Taken from the 'key_pair_name' variable.
-    # Assign the created Security Group to the instance.
+    key_name        = var.key_pair_name 
+
     vpc_security_group_ids = [aws_security_group.instance_sg.id]
 
     tags = {
-        Name = var.instance_name # Taken from the 'instance_name' variable.
+        Name = var.instance_name 
     }
 }

@@ -17,16 +17,24 @@
   ansible.builtin.synchronize:
     src: "{{ playbook_dir }}/roles/nodejs/files/codebase/"
     dest: /home/ubuntu/nodeapp/
-    mode: push # Indica que los archivos se envían del controlador (runner) al destino (EC2)
-    recursive: yes # Copia directorios y su contenido
-    perms: yes # Mantiene los permisos de los archivos
-    owner: yes # Mantiene el propietario (si el usuario 'ubuntu' existe en el destino)
-    group: yes # Mantiene el grupo (si el grupo 'ubuntu' existe en el destino)
+    mode: push 
+    recursive: yes 
+    perms: yes 
+    owner: yes 
+    group: yes 
   notify:
     - Reload nodeapp
 
-# --- PASO ORIGINAL (Mantener si es un archivo de configuración externo) ---
-# Copiar el archivo de servicio systemd.
+- name: Ensure correct ownership for Node.js app directory
+  ansible.builtin.file:
+    path: /home/ubuntu/nodeapp/
+    owner: ubuntu
+    group: ubuntu
+    mode: '0755' # Asegura permisos de ejecución para el directorio
+    recurse: yes # Aplica los cambios recursivamente a todo el contenido
+    state: directory # Asegura que el path es un directorio
+
+
 - name: Copy nodeapp.service file
   ansible.builtin.copy:
     src: ../files/service/nodeapp.service

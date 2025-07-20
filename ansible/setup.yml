@@ -1,6 +1,6 @@
 # setup.yml
 ---
-- name: Configuración inicial del servidor
+- name: Initialize Ansible Playbook
   hosts: all 
   become: yes 
 
