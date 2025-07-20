@@ -45,12 +45,10 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_REGION: ${{ env.AWS_REGION }}
 
-    # --- Capturar la Salida de Terraform (Paso Separado) ---
-    # Creamos un paso dedicado solo para obtener el output de Terraform
-    # y exportarlo como una salida de paso de GitHub Actions.
+    # --- Capturar la Salida de Terraform ---
     - name: Get Terraform Outputs
-      id: get_tf_outputs # ID para este nuevo paso
-      working-directory: ./terraform-aws # Ejecutar en el mismo directorio de Terraform
+      id: get_tf_outputs
+      working-directory: ./terraform-aws
       run: |
         INSTANCE_ID_FROM_TF=$(terraform output -raw instance_id)
         echo "instance_id=$INSTANCE_ID_FROM_TF" >> "$GITHUB_OUTPUT"
@@ -60,16 +58,17 @@ jobs:
         AWS_REGION: ${{ env.AWS_REGION }}
 
     # --- Esperar a que la Instancia EC2 esté en Running ---
-    # Este paso ahora usa la salida del nuevo paso 'get_tf_outputs'.
     - name: Wait for EC2 instance to be running
       run: |
-        # Capturamos el ID de la instancia de la salida del paso 'get_tf_outputs'.
         INSTANCE_ID="${{ steps.get_tf_outputs.outputs.instance_id }}"
-        
         echo "Waiting for instance $INSTANCE_ID to be running..."
-        # El comando 'aws ec2 wait instance-running' pausa el script hasta que la instancia esté lista.
         aws ec2 wait instance-running --instance-ids "$INSTANCE_ID"
         echo "Instance $INSTANCE_ID is now running."
+        
+        # --- ¡NUEVO! Añadir un pequeño retraso adicional ---
+        echo "Adding a 10-second delay for tag propagation..."
+        sleep 10 # Espera 10 segundos
+        # --------------------------------------------------
       env:
         AWS_REGION: ${{ env.AWS_REGION }}
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
