@@ -1,3 +1,5 @@
+#Node.js Deployment
+
 Continuous Deployment of Node.js Application on AWS EC2 with GitHub Actions and Ansible
 This repository provides a comprehensive setup for the continuous integration and continuous deployment (CI/CD) of a Node.js application onto an AWS EC2 instance. It leverages Terraform for infrastructure provisioning, Ansible for server configuration and application deployment, and GitHub Actions to automate the entire pipeline.
 
@@ -13,6 +15,7 @@ Ansible configures the EC2 instance, installs Node.js (via nodejs tag), copies t
 The Node.js application is deployed and starts on the EC2 instance.
 
 🛠️ Technologies Used
+
 GitHub Actions
 
 AWS EC2 & IAM
@@ -22,24 +25,6 @@ Terraform
 Ansible
 
 Node.js & Systemd
-
-📁 Repository Structure
-.
-├── .github/
-│   └── workflows/
-│       └── deploy.yml              # GitHub Actions workflow
-├── ansible/
-│   ├── roles/
-│   │   ├── base/                   # Optional Ansible role for basic server setup (e.g., git, fail2ban)
-│   │   ├── nodejs/                 # Ansible role for Node.js app deployment
-│   │   └── nginx/                  # Optional Ansible role for Nginx 
-│   ├── hosts                       # Ansible inventory (for static VMs)
-│   └── setup.yml                   # Main Ansible playbook
-├── terraform-aws/
-│   ├── main.tf                     # AWS resource definitions
-│   ├── variables.tf                # Terraform input variables
-│   └── outputs.tf                  # Terraform outputs
-└── README.md                       # This file
 
 ⚙️ Configuration
 To enable the pipeline, configure AWS credentials and an SSH key in GitHub Secrets.
